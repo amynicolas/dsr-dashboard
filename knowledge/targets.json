@@ -1,0 +1,43 @@
+{
+  "_meta": {
+    "description": "Monthly sales targets per project group — edit this file each month, then run process_dsr.py to inject into the dashboard.",
+    "format": "{ 'Month YYYY': { total: {units, ncp}, ETS: {units, ncp}, HTS: {units, ncp}, 'New Projects': {units, ncp} } }",
+    "note": "ncp values are in PHP (full number, not millions). Total NCP for May 2026 is pulled from Section VII of the DSR."
+  },
+  "May 2026": {
+    "total": {
+      "units": 72,
+      "ncp": 819086086.83
+    },
+    "ETS": {
+      "units": 45,
+      "ncp": 500000000
+    },
+    "HTS": {
+      "units": 15,
+      "ncp": 200000000
+    },
+    "New Projects": {
+      "units": 12,
+      "ncp": 119086086.83
+    }
+  },
+  "June 2026": {
+    "total": {
+      "units": 0,
+      "ncp": 0
+    },
+    "ETS": {
+      "units": 0,
+      "ncp": 0
+    },
+    "HTS": {
+      "units": 0,
+      "ncp": 0
+    },
+    "New Projects": {
+      "units": 0,
+      "ncp": 0
+    }
+  }
+}

@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DSR Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #eeede8;
+  --text: #1a1a1a; --text2: #666660; --text3: #aaa;
+  --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.20);
+  --blue: #378ADD; --green: #1D9E75; --amber: #BA7517; --red: #E24B4A;
+  --blue-bg: #E6F1FB; --green-bg: #EAF3DE; --amber-bg: #FAEEDA; --red-bg: #FCEBEB;
+  --radius: 8px; --radius-lg: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1c; --bg2: #2a2a28; --bg3: #333330;
+    --text: #f0efea; --text2: #a8a8a0; --text3: #666;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.18);
+    --blue-bg: #042c53; --green-bg: #17340a; --amber-bg: #412402; --red-bg: #501313;
+  }
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; font-size: 14px; }
+a { color: var(--blue); }
+
+/* HEADER */
+.app-header { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.app-header h1 { font-size: 15px; font-weight: 500; }
+.app-header .meta { font-size: 12px; color: var(--text2); }
+.upload-mini { display: flex; align-items: center; gap: 8px; }
+.upload-mini label { display: flex; align-items: center; gap: 6px; background: none; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--text); }
+.upload-mini label:hover { background: var(--bg2); }
+.upload-mini input { display: none; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); }
+.status-dot.loaded { background: var(--green); }
+
+/* UPLOAD ZONE */
+.upload-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius-lg); padding: 48px 24px; text-align: center; cursor: pointer; transition: background 0.15s; margin: 24px auto; max-width: 480px; background: var(--bg); }
+.upload-zone:hover, .upload-zone.dragover { background: var(--bg2); }
+.upload-zone i { font-size: 36px; color: var(--text3); display: block; margin-bottom: 12px; }
+.upload-zone h2 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+.upload-zone p { font-size: 13px; color: var(--text2); }
+.upload-zone .hint { margin-top: 10px; font-size: 11px; color: var(--text3); background: var(--bg2); border-radius: var(--radius); padding: 6px 12px; display: inline-block; }
+
+/* TABS */
+.tab-wrap { background: var(--bg); border-bottom: 0.5px solid var(--border); position: sticky; top: 49px; z-index: 99; }
+.tab-bar { display: flex; overflow-x: auto; padding: 0 16px; }
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 11px 16px; font-size: 13px; color: var(--text2); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+.tab-btn:hover:not(.active) { color: var(--text); background: var(--bg2); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* LAYOUT */
+.container { max-width: 1080px; margin: 0 auto; padding: 20px 16px; }
+.card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 14px; }
+.card-title { font-size: 11px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+/* METRIC CARDS */
+.metric-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.metric { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; }
+.metric .lbl { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+.metric .val { font-size: 22px; font-weight: 500; line-height: 1.2; }
+.metric .sub { font-size: 11px; color: var(--text2); margin-top: 3px; }
+.metric.blue .val { color: var(--blue); }
+.metric.green .val { color: var(--green); }
+.metric.amber .val { color: var(--amber); }
+.metric.red .val { color: var(--red); }
+
+/* TABLES */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { background: var(--bg2); color: var(--text2); font-weight: 500; padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 0.5px solid var(--border2); }
+th:first-child { text-align: left; }
+td { padding: 6px 10px; text-align: right; border-bottom: 0.5px solid var(--border); }
+td:first-child { text-align: left; color: var(--text2); }
+tr.group-header td { font-weight: 500; color: var(--text); background: var(--bg2); }
+tr.sub-row td { font-size: 11px; }
+tr.sub-row td:first-child { padding-left: 22px; color: var(--text3); }
+tr.grand-total td { font-weight: 500; background: var(--amber-bg); color: var(--text); }
+tr:hover td { background: var(--bg2); }
+.perf-hi { color: var(--green); font-weight: 500; }
+.perf-lo { color: var(--red); }
+.perf-bar { height: 4px; border-radius: 2px; background: var(--border); position: relative; min-width: 60px; }
+.perf-bar span { position: absolute; left: 0; top: 0; height: 100%; border-radius: 2px; }
+
+/* CHART */
+.chart-wrap { position: relative; width: 100%; }
+
+/* REPORT PREVIEW */
+.report-box { background: var(--bg2); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 16px 20px; font-size: 13px; line-height: 2; white-space: pre-wrap; font-family: 'SF Mono', 'Fira Code', monospace; min-height: 300px; color: var(--text); }
+.action-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+.btn { background: none; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 7px 14px; font-size: 13px; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.btn:hover { background: var(--bg2); }
+.btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+.btn.primary:hover { opacity: 0.85; }
+.toast { background: var(--green-bg); color: var(--green); border-radius: var(--radius); padding: 6px 12px; font-size: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+
+/* REPORT CONFIG */
+.report-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.field-group { display: flex; flex-direction: column; gap: 4px; }
+.field-group label { font-size: 11px; color: var(--text2); }
+.field-group input { font-size: 13px; padding: 7px 9px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text); }
+.field-group input:focus { outline: none; border-color: var(--blue); }
+
+/* BADGE */
+.badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+
+/* PERIOD FILTER */
+.period-controls { display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+.period-lbl { font-size:11px; color:var(--text2); font-weight:500; }
+.period-btn { background:var(--bg2); border:0.5px solid var(--border); border-radius:20px; padding:5px 14px; font-size:12px; color:var(--text2); cursor:pointer; transition:background 0.15s; }
+.period-btn.active { background:var(--text); color:var(--bg); border-color:var(--text); }
+.period-btn:hover:not(.active) { background:var(--bg3); color:var(--text); }
+.period-sep { width:1px; height:16px; background:var(--border2); margin:0 2px; }
+
+/* TARGETS */
+.tva-bar { height:6px; border-radius:3px; background:var(--border); position:relative; min-width:80px; }
+.tva-bar .fill { position:absolute; left:0; top:0; height:100%; border-radius:3px; transition:width 0.4s; }
+.over-target { color:var(--green); font-weight:500; }
+.under-target { color:var(--red); }
+
+@media (max-width: 640px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } .report-fields { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <h1>DSR Dashboard</h1>
+    <div class="meta" id="hdr-meta">No file loaded — upload a DSR Excel to begin</div>
+  </div>
+  <div class="upload-mini">
+    <span class="status-dot" id="status-dot"></span>
+    <label>
+      <i class="ti ti-upload" style="font-size:14px;"></i>
+      Upload Excel
+      <input type="file" id="file-input" accept=".xlsx,.xls" />
+    </label>
+  </div>
+</div>
+
+<!-- UPLOAD LANDING -->
+<div id="upload-landing" style="padding: 20px 16px;">
+  <div class="upload-zone" id="drop-zone">
+    <i class="ti ti-file-spreadsheet"></i>
+    <h2>Drop your DSR Excel file here</h2>
+    <p>Or click to select — accepts the daily DSR_May_YYYY.xlsx format</p>
+    <span class="hint">Reads the Summary sheet automatically · All 7 sections parsed</span>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" style="display:none;">
+  <div class="tab-wrap">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('overview')"><i class="ti ti-layout-dashboard" style="font-size:13px;"></i> Overview</button>
+      <button class="tab-btn" onclick="switchTab('sales-group')"><i class="ti ti-users" style="font-size:13px;"></i> Per Sales Group</button>
+      <button class="tab-btn" onclick="switchTab('project')"><i class="ti ti-building" style="font-size:13px;"></i> Per Project</button>
+      <button class="tab-btn" onclick="switchTab('channels')"><i class="ti ti-world" style="font-size:13px;"></i> Sales Channels</button>
+      <button class="tab-btn" onclick="switchTab('payments')"><i class="ti ti-receipt" style="font-size:13px;"></i> Payment Terms</button>
+      <button class="tab-btn" onclick="switchTab('performance')"><i class="ti ti-target" style="font-size:13px;"></i> Performance</button>
+      <button class="tab-btn" onclick="switchTab('per-pd')"><i class="ti ti-id-badge" style="font-size:13px;"></i> Per PD</button>
+      <button class="tab-btn" onclick="switchTab('per-country')"><i class="ti ti-globe" style="font-size:13px;"></i> Per Country</button>
+      <button class="tab-btn" onclick="switchTab('trends')"><i class="ti ti-trending-up" style="font-size:13px;"></i> Trends</button>
+      <button class="tab-btn" onclick="switchTab('targets')"><i class="ti ti-flag" style="font-size:13px;"></i> Targets</button>
+      <button class="tab-btn" onclick="switchTab('whatsapp')"><i class="ti ti-brand-whatsapp" style="font-size:13px;"></i> WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div id="tab-overview" class="tab-pane active">
+    <div class="container">
+      <div class="metric-row" id="overview-metrics"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">RS by project (₱M)</div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="proj-chart" role="img" aria-label="RS by project"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Sales channel split</div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="channel-chart" role="img" aria-label="Sales channel split"></canvas></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">ETS payment terms (₱M)</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="ets-terms-chart" role="img" aria-label="ETS payment terms"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top agents by RS (₱M)</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="agents-chart" role="img" aria-label="Top agents by RS"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PER SALES GROUP -->
+  <div id="tab-sales-group" class="tab-pane">
+    <div class="container">
+      <div class="card">
+        <div class="card-title">I. Per Sales Group — Performance RS</div>
+        <div class="tbl-wrap"><table id="sales-group-table"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PER PROJECT -->
+  <div id="tab-project" class="tab-pane">
+    <div class="container">
+      <div class="card">
+        <div class="card-title">II. Per Project</div>
+        <div class="tbl-wrap"><table id="project-table"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SALES CHANNELS -->
+  <div id="tab-channels" class="tab-pane">
+    <div class="container">
+      <div class="card">
+        <div class="card-title">IV-A. Sales Channel by Project</div>
+        <div class="tbl-wrap"><table id="channel-proj-table"></table></div>
+      </div>
+      <div class="card">
+        <div class="card-title">IV-B. Sales Channel by Country of Employment</div>
+        <div class="tbl-wrap"><table id="channel-country-table"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT TERMS -->
+  <div id="tab-payments" class="tab-pane">
+    <div class="container">
+      <div class="card">
+        <div class="card-title">VI-A. Payment Term Availed (ETS)</div>
+        <div class="tbl-wrap"><table id="ets-terms-table"></table></div>
+      </div>
+      <div class="card">
+        <div class="card-title">VI-B. Payment Term Availed (HTS / New Proj)</div>
+        <div class="tbl-wrap"><table id="hts-terms-table"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERFORMANCE -->
+  <div id="tab-performance" class="tab-pane">
+    <div class="container">
+      <div class="card">
+        <div class="card-title">VII. Sales Target and Performance</div>
+        <div class="tbl-wrap"><table id="perf-table"></table></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Performance vs target (% of total)</div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="perf-chart" role="img" aria-label="Performance vs target"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRENDS -->
+  <div id="tab-trends" class="tab-pane">
+    <div class="container">
+      <div class="period-controls">
+        <span class="period-lbl">Show:</span>
+        <button class="period-btn active" data-period="all" onclick="setPeriod('all')">All time</button>
+        <button class="period-btn" data-period="month" onclick="setPeriod('month')">This month</button>
+        <button class="period-btn" data-period="week7" onclick="setPeriod('week7')">Last 7 days</button>
+        <div class="period-sep"></div>
+        <button class="period-btn" id="view-mode-btn" onclick="toggleDelta()">Show daily adds</button>
+      </div>
+      <div id="trends-empty" class="card" style="text-align:center; padding:48px 24px; display:none;">
+        <i class="ti ti-database-off" style="font-size:36px; color:var(--text3); display:block; margin-bottom:12px;"></i>
+        <div style="font-size:15px; font-weight:500; margin-bottom:6px;">No history yet</div>
+        <div style="font-size:13px; color:var(--text2);">Upload and process a few days of DSR Excel files to start seeing trends here.</div>
+      </div>
+      <div id="trends-content" style="display:none;">
+        <div class="metric-row" id="trends-metrics"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">RS units — daily trend</div>
+            <div class="chart-wrap" style="height:220px;"><canvas id="trend-rs-units-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">RS value (₱M) — daily trend</div>
+            <div class="chart-wrap" style="height:220px;"><canvas id="trend-rs-ncp-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">ETS vs HTS vs New Projects — units</div>
+            <div class="chart-wrap" style="height:220px;"><canvas id="trend-proj-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Local vs International sales (₱M)</div>
+            <div class="chart-wrap" style="height:220px;"><canvas id="trend-channel-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Daily snapshot history</div>
+          <div class="tbl-wrap"><table id="trends-history-table"></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PER PD -->
+  <div id="tab-per-pd" class="tab-pane">
+    <div class="container">
+      <div class="card">
+        <div class="card-title">III-A. Per PD — RS Units</div>
+        <div class="tbl-wrap"><table id="pd-rs-table"></table></div>
+      </div>
+      <div class="card">
+        <div class="card-title">III-B. Per PD — Hold Units</div>
+        <div class="tbl-wrap"><table id="pd-hold-table"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PER COUNTRY -->
+  <div id="tab-per-country" class="tab-pane">
+    <div class="container">
+      <div class="card">
+        <div class="card-title">V. Per Project by Country of Employment</div>
+        <div class="tbl-wrap"><table id="country-table"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TARGETS -->
+  <div id="tab-targets" class="tab-pane">
+    <div class="container">
+      <div id="targets-empty" class="card" style="text-align:center; padding:48px 24px; display:block;">
+        <i class="ti ti-flag-off" style="font-size:36px; color:var(--text3); display:block; margin-bottom:12px;"></i>
+        <div style="font-size:15px; font-weight:500; margin-bottom:6px;">No targets configured yet</div>
+        <div style="font-size:13px; color:var(--text2); max-width:400px; margin:0 auto;">Edit <code>knowledge/targets.json</code> to set monthly targets per project group, then re-run <code>process_dsr.py</code>.</div>
+      </div>
+      <div id="targets-content" style="display:none;">
+        <div class="metric-row" id="targets-metrics"></div>
+        <div class="grid-2" style="margin-bottom:14px;">
+          <div class="card">
+            <div class="card-title" id="targets-proj-title">Target vs Actual by project (₱M)</div>
+            <div class="chart-wrap" style="height:240px;"><canvas id="targets-proj-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Monthly progress (%)</div>
+            <div class="chart-wrap" style="height:240px;"><canvas id="targets-monthly-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Month-by-month target tracking</div>
+          <div class="tbl-wrap"><table id="targets-table"></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHATSAPP -->
+  <div id="tab-whatsapp" class="tab-pane">
+    <div class="container">
+      <div class="card">
+        <div class="card-title">Report configuration</div>
+        <div class="report-fields">
+          <div class="field-group"><label>Report date (e.g. May 20)</label><input type="text" id="rpt-date" oninput="buildReport()" /></div>
+          <div class="field-group"><label>New RS accounts today</label><input type="number" id="new-rs" value="0" min="0" oninput="buildReport()" /><span id="prev-snap-info" style="font-size:10px;color:var(--text3);margin-top:3px;display:block;">Upload today's Excel to auto-compute from yesterday.</span></div>
+          <div class="field-group"><label>Parking slots (PS)</label><input type="number" id="ps-count" value="0" min="0" oninput="buildReport()" /></div>
+          <div class="field-group"><label>Storage slots (SS)</label><input type="number" id="ss-count" value="0" min="0" oninput="buildReport()" /></div>
+        </div>
+        <p style="font-size:11px; color:var(--text2);">Date and parking counts are auto-filled from the Excel. Adjust if needed.</p>
+      </div>
+      <div class="card" style="margin-bottom:10px;">
+        <div class="card-title">Mix &amp; match — sections to include</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="tog-header" checked onchange="buildReport()"> Header &amp; RS summary</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="tog-total" checked onchange="buildReport()"> 1. Total RS</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="tog-parking" checked onchange="buildReport()"> 2. Parking &amp; Storage</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="tog-lto" checked onchange="buildReport()"> 3. LTO Terms</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="tog-channels" checked onchange="buildReport()"> 4. Sales Channels</label>
+        </div>
+      </div>
+      <div class="action-bar">
+        <button class="btn primary" onclick="copyReport()"><i class="ti ti-copy" style="font-size:13px;"></i> Copy for WhatsApp</button>
+        <button class="btn" onclick="generateShareableHTML()"><i class="ti ti-share" style="font-size:13px;"></i> Generate Shareable HTML</button>
+        <button class="btn" onclick="window.print()"><i class="ti ti-printer" style="font-size:13px;"></i> Print / PDF</button>
+        <span class="toast" id="copy-toast">Copied!</span>
+      </div>
+      <div class="report-box" id="report-out" contenteditable="true" spellcheck="false"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ─── State ───────────────────────────────────────────────────────────
+let DSR = null;
+let charts = {};
+let PERIOD = 'all';      // 'all' | 'month' | 'week7'
+let VIEW_MODE = 'cumulative'; // 'cumulative' | 'delta'
+
+// ─── Period helpers ───────────────────────────────────────────────────
+function setPeriod(p) {
+  PERIOD = p;
+  document.querySelectorAll('.period-btn[data-period]').forEach(b => b.classList.toggle('active', b.dataset.period === p));
+  renderHistoryTab();
+}
+
+function toggleDelta() {
+  VIEW_MODE = VIEW_MODE === 'cumulative' ? 'delta' : 'cumulative';
+  const btn = document.getElementById('view-mode-btn');
+  if (btn) btn.textContent = VIEW_MODE === 'cumulative' ? 'Show daily adds' : 'Show cumulative';
+  renderHistoryTab();
+}
+
+function getFilteredHistory() {
+  let h = (window.DSR_HISTORY || []).slice().sort((a,b) => a.processedAt > b.processedAt ? 1 : -1);
+  if (PERIOD === 'month') {
+    const now = new Date(); const m = now.getMonth(); const y = now.getFullYear();
+    h = h.filter(s => { const d = new Date(s.processedAt); return d.getMonth()===m && d.getFullYear()===y; });
+  } else if (PERIOD === 'week7') {
+    const cutoff = new Date(Date.now() - 7*24*60*60*1000);
+    h = h.filter(s => new Date(s.processedAt) >= cutoff);
+  }
+  return h;
+}
+
+function applyDelta(arr) {
+  if (VIEW_MODE === 'cumulative') return arr;
+  return arr.map((v, i) => i === 0 ? v : Math.max(0, v - arr[i-1]));
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────
+function switchTab(t) {
+  const tabs = ['overview','sales-group','project','channels','payments','performance','per-pd','per-country','trends','targets','whatsapp'];
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i]===t));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if (t==='overview') buildCharts();
+  if (t==='trends') renderHistoryTab();
+  if (t==='targets') renderTargetsTab();
+  if (t==='whatsapp') buildReport();
+}
+
+// ─── Upload handling ──────────────────────────────────────────────────
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => fileInput.files[0] && handleFile(fileInput.files[0]));
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      // Find summary sheet: prefer "summary_" prefix, fall back to any sheet with "summary" or "may"
+      let summarySheet = wb.SheetNames.find(n => n.toLowerCase().startsWith('summary_'))
+                      || wb.SheetNames.find(n => n.toLowerCase().includes('summary'))
+                      || wb.SheetNames.find(n => /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(n));
+      if (!summarySheet) { alert('No Summary sheet found in this file.\n\nSheet names found: ' + wb.SheetNames.join(', ') + '\n\nPlease upload a DSR Excel file.'); return; }
+      const ws = wb.Sheets[summarySheet];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
+      DSR = parseDSR(data);
+      DSR._sheetName = summarySheet;
+      renderAll();
+    } catch(err) { alert('Error reading file: ' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ─── Parser ───────────────────────────────────────────────────────────
+function v(row, col) { return (row && row[col] != null) ? (typeof row[col] === 'number' ? row[col] : 0) : 0; }
+function str(row, col) { return (row && row[col] != null) ? String(row[col]).trim() : ''; }
+function toM(n) { return Math.round(n / 1000000); }
+function pct(n) { return Math.round(n * 100); }
+
+function parseDSR(data) {
+  const dsr = {};
+
+  // ── Auto-detect label column ──────────────────────────────────────────
+  // SheetJS sheet_to_json may start arrays at col B (index 0) rather than
+  // the expected col B (index 1) when Excel's used range begins at col B.
+  // We scan for known section labels across cols 0-3 to find the real nameCol.
+  let nameCol = -1;
+  const ANCHOR = ['per sales group','per project','sales channel','payment term',
+                  'sales target','as of','daily sales report','i. per','ii. per',
+                  'iv-a','vi-a','vii.'];
+  outer: for (let ri = 0; ri < Math.min(data.length, 60); ri++) {
+    const row = data[ri];
+    if (!row) continue;
+    for (let ci = 0; ci <= 3; ci++) {
+      const cell = String(row[ci] || '').toLowerCase().trim();
+      if (ANCHOR.some(l => cell.includes(l))) { nameCol = ci; break outer; }
+    }
+  }
+  if (nameCol < 0) nameCol = 1; // safe fallback
+  dsr._nameCol = nameCol;
+
+  // c(n): map expected column index (assumes nameCol=1) to actual index
+  const c = n => n + (nameCol - 1);
+  const fR = label => data.findIndex(r => r && String(r[nameCol]||'').trim().toLowerCase().includes(label.toLowerCase()));
+  const gtOf = start => data.find((r,i) => i > start+2 && r && String(r[nameCol]||'').trim() === 'Grand Total');
+
+  // ── Date ──────────────────────────────────────────────────────────────
+  const dateRow = data.find(r => r && String(r[nameCol] || '').toLowerCase().startsWith('as of'));
+  dsr.reportDate = dateRow ? String(dateRow[nameCol]).replace(/as of /i, '').trim() : '';
+  const dateMatch = dsr.reportDate.match(/(\w+ \d+)/);
+  dsr.shortDate = dateMatch ? dateMatch[1] : dsr.reportDate;
+
+  // ── Section I — Per Sales Group ───────────────────────────────────────
+  const s1start = fR('I. Per Sales Group');
+  dsr.salesGroups = [];
+  if (s1start >= 0) {
+    for (let i = s1start + 3; i < Math.min(s1start + 30, data.length); i++) {
+      const row = data[i];
+      if (!row || row[nameCol] == null) continue;
+      const name = String(row[nameCol]).trim();
+      if (!name) continue;
+      if (name === 'Grand Total' || name === 'DAILY SALES REPORT') break;
+      if (['BROKERS','DIGITAL TEAM','OTHERS','NEW GROUPS','MCL','JMT','FDG','DVG'].includes(name.toUpperCase())) {
+        dsr.salesGroups.push({ name, isHeader: true }); continue;
+      }
+      dsr.salesGroups.push({
+        name, isHeader: false,
+        rsU: v(row,c(3)), rsNCP: v(row,c(4)),
+        holdU: v(row,c(5)), holdNCP: v(row,c(6)),
+        totU: v(row,c(7)), totNCP: v(row,c(8)),
+        psSlots: v(row,c(10)), psNCP: v(row,c(11)),
+        reopenU: v(row,c(13)), reopenNCP: v(row,c(14)),
+      });
+    }
+    const gtRow = gtOf(s1start);
+    dsr.s1Total = gtRow ? { rsU: v(gtRow,c(3)), rsNCP: v(gtRow,c(4)), totU: v(gtRow,c(7)), totNCP: v(gtRow,c(8)), psSlots: v(gtRow,c(10)), psNCP: v(gtRow,c(11)) } : null;
+  }
+
+  // ── Section II — Per Project ──────────────────────────────────────────
+  const s2start = fR('II. Per Project');
+  dsr.projects = [];
+  if (s2start >= 0) {
+    let currentGroup = null;
+    for (let i = s2start + 3; i < Math.min(s2start + 35, data.length); i++) {
+      const row = data[i];
+      if (!row || row[nameCol] == null) continue;
+      const name = String(row[nameCol]).trim();
+      if (!name) continue;
+      if (name === 'Grand Total' || name === 'DAILY SALES REPORT') break;
+      const isGroup = ['ETS','HTS','New Projects'].includes(name);
+      if (isGroup) {
+        currentGroup = name;
+        dsr.projects.push({ name, isGroup: true, rsU: v(row,c(3)), rsNCP: v(row,c(4)), psSlots: v(row,c(10)), psNCP: v(row,c(11)) });
+      } else if (name && !name.startsWith('Non-RFO') && !name.startsWith('Sell to') && !name.startsWith('RFO')) {
+        dsr.projects.push({ name, isGroup: false, group: currentGroup, rsU: v(row,c(3)), rsNCP: v(row,c(4)), psSlots: v(row,c(10)), psNCP: v(row,c(11)) });
+      }
+    }
+    const gtRow = gtOf(s2start);
+    dsr.s2Total = gtRow ? { rsU: v(gtRow,c(3)), rsNCP: v(gtRow,c(4)), psSlots: v(gtRow,c(10)), psNCP: v(gtRow,c(11)) } : null;
+  }
+
+  // ── Section IV-A — Sales Channel by Project ───────────────────────────
+  const s4astart = fR('IV-A');
+  dsr.channelByProj = [];
+  if (s4astart >= 0) {
+    for (let i = s4astart + 3; i < Math.min(s4astart + 25, data.length); i++) {
+      const row = data[i];
+      if (!row || row[nameCol] == null) continue;
+      const name = String(row[nameCol]).trim();
+      if (!name) continue;
+      if (name === 'Grand Total' || name === 'DAILY SALES REPORT' || name.startsWith('IV-B')) break;
+      if (!name.startsWith('Non-RFO') && !name.startsWith('Sell to') && !name.startsWith('RFO')) {
+        dsr.channelByProj.push({
+          name,
+          ldU: v(row,c(3)), ldNCP: v(row,c(4)), idU: v(row,c(5)), idNCP: v(row,c(6)),
+          lndU: v(row,c(10)), lndNCP: v(row,c(11)), indU: v(row,c(12)), indNCP: v(row,c(13)),
+          localU: v(row,c(17)), localNCP: v(row,c(18)), intlU: v(row,c(19)), intlNCP: v(row,c(20)),
+          totU: v(row,c(21)), totNCP: v(row,c(22)),
+        });
+      }
+    }
+    const gtRow = gtOf(s4astart);
+    if (gtRow) dsr.s4aTotal = {
+      ldU: v(gtRow,c(3)), ldNCP: v(gtRow,c(4)), idU: v(gtRow,c(5)), idNCP: v(gtRow,c(6)),
+      lndU: v(gtRow,c(10)), lndNCP: v(gtRow,c(11)), indU: v(gtRow,c(12)), indNCP: v(gtRow,c(13)),
+      localU: v(gtRow,c(17)), localNCP: v(gtRow,c(18)), intlU: v(gtRow,c(19)), intlNCP: v(gtRow,c(20)),
+      totU: v(gtRow,c(21)), totNCP: v(gtRow,c(22))
+    };
+  }
+
+  // ── Section IV-B — Sales Channel by Country ───────────────────────────
+  const s4bstart = fR('IV-B');
+  dsr.channelByCountry = [];
+  if (s4bstart >= 0) {
+    for (let i = s4bstart + 3; i < Math.min(s4bstart + 20, data.length); i++) {
+      const row = data[i];
+      if (!row || row[nameCol] == null) continue;
+      const name = String(row[nameCol]).trim();
+      if (!name) continue;
+      if (name === 'Grand Total' || name === 'DAILY SALES REPORT') break;
+      if (v(row,c(21)) > 0 || v(row,c(22)) > 0) {
+        dsr.channelByCountry.push({
+          name,
+          ldU: v(row,c(3)), ldNCP: v(row,c(4)), idU: v(row,c(5)), idNCP: v(row,c(6)),
+          lndU: v(row,c(10)), lndNCP: v(row,c(11)), indU: v(row,c(12)), indNCP: v(row,c(13)),
+          localU: v(row,c(17)), localNCP: v(row,c(18)), intlU: v(row,c(19)), intlNCP: v(row,c(20)),
+          totU: v(row,c(21)), totNCP: v(row,c(22))
+        });
+      }
+    }
+  }
+
+  // ── Section VI-A — ETS Payment Terms ─────────────────────────────────
+  const s6astart = fR('VI-A');
+  dsr.etsTerms = [];
+  dsr.etsProjects = [];
+  if (s6astart >= 0) {
+    const hdrRow = data[s6astart + 2];
+    if (hdrRow) dsr.etsProjects = [3,5,7,9,11].map(col => str(hdrRow,c(col))).filter(Boolean);
+    for (let i = s6astart + 3; i < Math.min(s6astart + 12, data.length); i++) {
+      const row = data[i];
+      if (!row || row[nameCol] == null) continue;
+      const name = String(row[nameCol]).trim();
+      if (!name) continue;
+      if (name === 'Grand Total') {
+        dsr.etsTermsTotal = { u: v(row,c(13))||v(row,c(11))||v(row,c(21)), ncp: v(row,c(14))||v(row,c(12))||v(row,c(22)) };
+        break;
+      }
+      if (v(row,c(13)) > 0 || v(row,c(14)) > 0 || v(row,c(21)) > 0) {
+        const totU = v(row,c(13)) || v(row,c(21));
+        const totNCP = v(row,c(14)) || v(row,c(22));
+        dsr.etsTerms.push({ name, vals: [3,5,7,9,11].map(col => ({ u: v(row,c(col)), ncp: v(row,c(col+1)) })), totU, totNCP });
+      }
+    }
+    const gtRow = gtOf(s6astart);
+    if (gtRow) {
+      const idxU = [13,21].find(col => v(gtRow,c(col)) > 0) || 13;
+      dsr.etsTermsTotal = { u: v(gtRow,c(idxU)), ncp: v(gtRow,c(idxU+1)) };
+    }
+  }
+
+  // ── Section VI-B — HTS / New Proj Payment Terms ───────────────────────
+  // Projects: HRA Large, Commune Large, Legacy Large, Barbados Large,
+  //           Spire Resi, AETV, Cerulean, AN Sports — TOTAL at c(19)/c(20)
+  const s6bstart = fR('VI-B');
+  dsr.htsTerms = [];
+  dsr.htsProjects = [];
+  if (s6bstart >= 0) {
+    const hdrRow = data[s6bstart + 1]; // project names are in row +1 (not +2)
+    if (hdrRow) dsr.htsProjects = [3,5,7,9,11,13,15,17].map(col => str(hdrRow,c(col))).filter(Boolean);
+    for (let i = s6bstart + 3; i < Math.min(s6bstart + 15, data.length); i++) {
+      const row = data[i];
+      if (!row || row[nameCol] == null) continue;
+      const name = String(row[nameCol]).trim();
+      if (!name) continue;
+      if (name === 'Grand Total') break;
+      const totU = v(row,c(19)); // TOTAL column (after all 8 project pairs)
+      const totNCP = v(row,c(20));
+      if (totU > 0) dsr.htsTerms.push({ name, vals: [3,5,7,9,11,13,15,17].map(col => ({ u: v(row,c(col)), ncp: v(row,c(col+1)) })), totU, totNCP });
+    }
+    const gtRow = gtOf(s6bstart);
+    if (gtRow) dsr.htsTermsTotal = { u: v(gtRow,c(19)), ncp: v(gtRow,c(20)) };
+  }
+
+  // ── Section III-A — Per PD (RS Units) ────────────────────────────────
+  const s3astart = fR('III-A. Per');
+  dsr.pdRS = [];
+  dsr.pdProjects = [];
+  if (s3astart >= 0) {
+    const hdrRow = data[s3astart + 1];
+    if (hdrRow) dsr.pdProjects = [3,5,7,9,11,13,15,17,19,21].map(col => str(hdrRow,c(col))).filter(Boolean);
+    let curGroup = null;
+    for (let i = s3astart + 2; i < Math.min(s3astart + 70, data.length); i++) {
+      const row = data[i];
+      if (!row || row[nameCol] == null) continue;
+      const name = String(row[nameCol]).trim();
+      if (!name) continue;
+      if (name === 'Grand Total') {
+        dsr.pdRSTotal = { totU: v(row,c(23)), totNCP: v(row,c(24)), psU: v(row,c(26)), psNCP: v(row,c(27)) };
+        break;
+      }
+      const isGroup = ['MCL','JMT','FDG','DVG'].some(g => name.toUpperCase().startsWith(g));
+      if (isGroup) {
+        curGroup = name;
+        dsr.pdRS.push({ name, isGroup: true, vals: [3,5,7,9,11,13,15,17,19,21].map(col=>({u:v(row,c(col)),ncp:v(row,c(col+1))})), totU: v(row,c(23)), totNCP: v(row,c(24)), psU: v(row,c(26)), psNCP: v(row,c(27)) });
+      } else {
+        dsr.pdRS.push({ name, isGroup: false, group: curGroup, vals: [3,5,7,9,11,13,15,17,19,21].map(col=>({u:v(row,c(col)),ncp:v(row,c(col+1))})), totU: v(row,c(23)), totNCP: v(row,c(24)), psU: v(row,c(26)), psNCP: v(row,c(27)) });
+      }
+    }
+  }
+
+  // ── Section III-B — Per PD (Hold Units) ──────────────────────────────
+  const s3bstart = fR('III-B. Per');
+  dsr.pdHold = [];
+  if (s3bstart >= 0) {
+    let curGroup = null;
+    for (let i = s3bstart + 2; i < Math.min(s3bstart + 70, data.length); i++) {
+      const row = data[i];
+      if (!row || row[nameCol] == null) continue;
+      const name = String(row[nameCol]).trim();
+      if (!name) continue;
+      if (name === 'Grand Total') {
+        dsr.pdHoldTotal = { totU: v(row,c(23)), totNCP: v(row,c(24)) };
+        break;
+      }
+      const isGroup = ['MCL','JMT','FDG','DVG'].some(g => name.toUpperCase().startsWith(g));
+      if (isGroup) {
+        curGroup = name;
+        dsr.pdHold.push({ name, isGroup: true, vals: [3,5,7,9,11,13,15,17,19,21].map(col=>({u:v(row,c(col)),ncp:v(row,c(col+1))})), totU: v(row,c(23)), totNCP: v(row,c(24)) });
+      } else {
+        dsr.pdHold.push({ name, isGroup: false, group: curGroup, vals: [3,5,7,9,11,13,15,17,19,21].map(col=>({u:v(row,c(col)),ncp:v(row,c(col+1))})), totU: v(row,c(23)), totNCP: v(row,c(24)) });
+      }
+    }
+  }
+
+  // ── Section V — Per Project by Country ───────────────────────────────
+  const s5start = fR('V. Per Project');
+  dsr.projCountry = [];
+  if (s5start >= 0) {
+    const hdrRow5 = data[s5start + 1];
+    if (hdrRow5 && dsr.pdProjects.length === 0) dsr.pdProjects = [3,5,7,9,11,13,15,17,19,21].map(col => str(hdrRow5,c(col))).filter(Boolean);
+    for (let i = s5start + 2; i < Math.min(s5start + 35, data.length); i++) {
+      const row = data[i];
+      if (!row || row[nameCol] == null) continue;
+      const name = String(row[nameCol]).trim();
+      if (!name) continue;
+      if (name === 'Grand Total') {
+        dsr.projCountryTotal = { totU: v(row,c(23)), totNCP: v(row,c(24)) };
+        break;
+      }
+      if (v(row,c(23)) > 0 || v(row,c(24)) > 0) {
+        dsr.projCountry.push({ name, vals: [3,5,7,9,11,13,15,17,19,21].map(col=>({u:v(row,c(col)),ncp:v(row,c(col+1))})), totU: v(row,c(23)), totNCP: v(row,c(24)) });
+      }
+    }
+  }
+
+  // ── Section VII — Performance ─────────────────────────────────────────
+  const s7start = fR('VII. Sales');
+  dsr.performance = [];
+  if (s7start >= 0) {
+    for (let i = s7start + 3; i < Math.min(s7start + 25, data.length); i++) {
+      const row = data[i];
+      if (!row || row[nameCol] == null) continue;
+      const name = String(row[nameCol]).trim();
+      if (!name) continue;
+      if (name === 'Grand Total' || name === 'DAILY SALES REPORT') {
+        if (name === 'Grand Total') dsr.s7Total = { tgtC: v(row,c(3)), tgtH: v(row,c(4)), tgt: v(row,c(5)), actC: v(row,c(6)), actH: v(row,c(7)), act: v(row,c(8)), perf: v(row,c(14)) };
+        break;
+      }
+      if (['BROKERS','DIGITAL TEAM','OTHERS','NEW GROUPS'].includes(name.toUpperCase())) { dsr.performance.push({ name, isHeader: true }); continue; }
+      if (v(row,c(5)) > 0 || v(row,c(8)) >= 0) {
+        dsr.performance.push({ name, isHeader: false, tgtC: v(row,c(3)), tgtH: v(row,c(4)), tgt: v(row,c(5)), actC: v(row,c(6)), actH: v(row,c(7)), act: v(row,c(8)), varC: v(row,c(9)), varH: v(row,c(10)), varT: v(row,c(11)), perfC: v(row,c(12)), perfH: v(row,c(13)), perf: v(row,c(14)) });
+      }
+    }
+  }
+
+  return dsr;
+}
+
+// ─── Render all ────────────────────────────────────────────────────────
+function renderAll() {
+  if (!DSR) return;
+  document.getElementById('upload-landing').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('hdr-meta').textContent = 'DSR ' + DSR.reportDate;
+  document.getElementById('status-dot').classList.add('loaded');
+
+  renderOverviewMetrics();
+  renderSalesGroupTable();
+  renderProjectTable();
+  renderChannelTables();
+  renderPaymentTermsTables();
+  renderPDTables();
+  renderCountryTable();
+  renderPerformanceTable();
+  renderHistoryTab();
+  buildCharts();
+
+  // Pre-fill WhatsApp inputs
+  document.getElementById('rpt-date').value = DSR.shortDate;
+  if (DSR.s1Total) {
+    document.getElementById('ps-count').value = DSR.s1Total.psSlots || 0;
+  }
+
+  // ── Delta: compute new RS accounts vs previous day ────────────────────
+  // Save today's snapshot to localStorage (keyed by date string).
+  // On next upload, look up the most recent prior snapshot and auto-fill the delta.
+  try {
+    const todayKey = 'dsr_snap_' + (DSR.shortDate || '').replace(/\s+/g,'_');
+    const todayRsU = (DSR.s2Total || {}).rsU || 0;
+    const snap = { rsU: todayRsU, date: DSR.shortDate, saved: Date.now() };
+    localStorage.setItem(todayKey, JSON.stringify(snap));
+
+    // Find most recent prior snapshot (different date, earlier save time)
+    let prevSnap = null;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('dsr_snap_') || k === todayKey) continue;
+      try {
+        const s = JSON.parse(localStorage.getItem(k));
+        if (!prevSnap || s.saved > prevSnap.saved) prevSnap = s;
+      } catch(e) {}
+    }
+    if (prevSnap) {
+      const delta = Math.max(0, todayRsU - prevSnap.rsU);
+      document.getElementById('new-rs').value = delta;
+      document.getElementById('prev-snap-info').textContent =
+        `Auto-computed: ${todayRsU} units today − ${prevSnap.rsU} units on ${prevSnap.date} = ${delta} new`;
+    } else {
+      document.getElementById('prev-snap-info').textContent =
+        'No previous day found — enter manually. (Will auto-fill tomorrow once today is saved.)';
+    }
+  } catch(e) {
+    // localStorage blocked (private mode etc.) — silent fallback
+    document.getElementById('prev-snap-info').textContent = 'Enter manually (storage unavailable in this browser mode).';
+  }
+
+  buildReport();
+}
+
+function M(n) { return toM(n) + 'M'; }
+function N(n) { return n ? n.toLocaleString() : '0'; }
+
+// ─── Overview metrics ────────────────────────────────────────────────
+function renderOverviewMetrics() {
+  const t = DSR.s2Total || {};
+  const ch = DSR.s4aTotal || {};
+  const perf = DSR.s7Total || {};
+  const perfPct = perf.perf ? Math.round(perf.perf * 100) : 0;
+  document.getElementById('overview-metrics').innerHTML = `
+    <div class="metric blue"><div class="lbl">Total RS</div><div class="val">₱${M(t.rsNCP||0)}</div><div class="sub">${t.rsU||0} units</div></div>
+    <div class="metric"><div class="lbl">Parking &amp; Storage</div><div class="val">${t.psSlots||0} slots</div><div class="sub">₱${M(t.psNCP||0)}</div></div>
+    <div class="metric green"><div class="lbl">Local sales</div><div class="val">₱${M(ch.localNCP||0)}</div><div class="sub">${ch.localU||0} units</div></div>
+    <div class="metric amber"><div class="lbl">International</div><div class="val">₱${M(ch.intlNCP||0)}</div><div class="sub">${ch.intlU||0} units</div></div>
+    <div class="metric ${perfPct >= 100 ? 'green' : perfPct >= 50 ? '' : 'red'}"><div class="lbl">Overall performance</div><div class="val">${perfPct}%</div><div class="sub">of ₱${M(perf.tgt||0)} target</div></div>
+  `;
+}
+
+// ─── Sales Group Table ────────────────────────────────────────────────
+function renderSalesGroupTable() {
+  const t = document.getElementById('sales-group-table');
+  let html = `<thead><tr><th>Sales Group</th><th>RS Units</th><th>RS NCP</th><th>Hold Units</th><th>Hold NCP</th><th>Total Units</th><th>Total NCP</th><th>PS Slots</th><th>PS NCP</th></tr></thead><tbody>`;
+  for (const r of DSR.salesGroups) {
+    if (r.isHeader) { html += `<tr class="group-header"><td colspan="9">${r.name}</td></tr>`; continue; }
+    html += `<tr><td>${r.name}</td><td>${r.rsU}</td><td>₱${M(r.rsNCP)}</td><td>${r.holdU}</td><td>₱${M(r.holdNCP)}</td><td>${r.totU}</td><td>₱${M(r.totNCP)}</td><td>${r.psSlots}</td><td>₱${M(r.psNCP)}</td></tr>`;
+  }
+  if (DSR.s1Total) {
+    const t1 = DSR.s1Total;
+    html += `<tr class="grand-total"><td>Grand Total</td><td>${t1.rsU}</td><td>₱${M(t1.rsNCP)}</td><td>—</td><td>—</td><td>${t1.totU}</td><td>₱${M(t1.totNCP)}</td><td>${t1.psSlots}</td><td>₱${M(t1.psNCP)}</td></tr>`;
+  }
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+// ─── Project Table ────────────────────────────────────────────────────
+function renderProjectTable() {
+  const t = document.getElementById('project-table');
+  let html = `<thead><tr><th>Project</th><th>RS Units</th><th>RS NCP</th><th>PS Slots</th><th>PS NCP</th></tr></thead><tbody>`;
+  for (const r of DSR.projects) {
+    const cls = r.isGroup ? 'group-header' : '';
+    const indent = !r.isGroup ? 'style="padding-left:22px; color:var(--text2);"' : '';
+    html += `<tr class="${cls}"><td ${indent}>${r.name}</td><td>${r.rsU}</td><td>₱${M(r.rsNCP)}</td><td>${r.psSlots||0}</td><td>₱${M(r.psNCP||0)}</td></tr>`;
+  }
+  if (DSR.s2Total) {
+    const t2 = DSR.s2Total;
+    html += `<tr class="grand-total"><td>Grand Total</td><td>${t2.rsU}</td><td>₱${M(t2.rsNCP)}</td><td>${t2.psSlots}</td><td>₱${M(t2.psNCP)}</td></tr>`;
+  }
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+// ─── Per PD Tables ───────────────────────────────────────────────────
+function renderPDTables() {
+  const projs = (DSR.pdProjects || []).slice(0,10);
+  const shortName = s => (s||'').replace(/\s*(Large|Resi|Tower|Condo|Res)\s*/gi,'').trim().split(/\s+/).slice(0,2).join(' ');
+  function buildPDTable(rows, total, tableId, hasPS) {
+    const el = document.getElementById(tableId);
+    if (!el) return;
+    let thd = `<thead><tr><th>PD / Group</th>` + projs.map(p => `<th title="${p}">${shortName(p)}</th>`).join('') + `<th>Total u</th><th>Total ₱M</th>`;
+    if (hasPS) thd += `<th>PS u</th><th>PS ₱M</th>`;
+    thd += `</tr></thead>`;
+    let body = '<tbody>';
+    for (const r of rows) {
+      const cls = r.isGroup ? 'group-header' : 'sub-row';
+      const nameTd = r.isGroup ? `<td>${r.name}</td>` : `<td style="padding-left:22px;color:var(--text3);">${r.name}</td>`;
+      const projTds = projs.map((_,i) => { const val = r.vals[i]; return val && val.u > 0 ? `<td>${val.u}</td>` : `<td style="color:var(--text3);">—</td>`; }).join('');
+      let row = `<tr class="${cls}">${nameTd}${projTds}<td>${r.totU||0}</td><td>${r.totNCP ? M(r.totNCP) : '—'}</td>`;
+      if (hasPS) row += `<td>${r.psU||0}</td><td>${r.psNCP ? M(r.psNCP) : '—'}</td>`;
+      row += '</tr>';
+      body += row;
+    }
+    if (total) {
+      let gt = `<tr class="grand-total"><td>Grand Total</td>` + projs.map(() => '<td>—</td>').join('') + `<td>${total.totU||0}</td><td>${total.totNCP ? M(total.totNCP) : '—'}</td>`;
+      if (hasPS) gt += `<td>${total.psU||0}</td><td>${total.psNCP ? M(total.psNCP) : '—'}</td>`;
+      body += gt + '</tr>';
+    }
+    el.innerHTML = thd + body + '</tbody>';
+  }
+  buildPDTable(DSR.pdRS || [], DSR.pdRSTotal, 'pd-rs-table', true);
+  buildPDTable(DSR.pdHold || [], DSR.pdHoldTotal, 'pd-hold-table', false);
+}
+
+// ─── Per Country Table ────────────────────────────────────────────────
+function renderCountryTable() {
+  const el = document.getElementById('country-table');
+  if (!el) return;
+  const projs = (DSR.pdProjects || []).slice(0,10);
+  const shortName = s => (s||'').replace(/\s*(Large|Resi|Tower|Condo|Res)\s*/gi,'').trim().split(/\s+/).slice(0,2).join(' ');
+  const rows = DSR.projCountry || [];
+  const total = DSR.projCountryTotal;
+  let thd = `<thead><tr><th>Country</th>` + projs.map(p => `<th title="${p}">${shortName(p)}</th>`).join('') + `<th>Total u</th><th>Total ₱M</th></tr></thead>`;
+  let body = '<tbody>';
+  for (const r of rows) {
+    const projTds = projs.map((_,i) => { const val = r.vals[i]; return val && val.u > 0 ? `<td>${val.u}</td>` : `<td style="color:var(--text3);">—</td>`; }).join('');
+    body += `<tr><td>${r.name}</td>${projTds}<td>${r.totU||0}</td><td>${r.totNCP ? M(r.totNCP) : '—'}</td></tr>`;
+  }
+  if (total) body += `<tr class="grand-total"><td>Grand Total</td>` + projs.map(() => '<td>—</td>').join('') + `<td>${total.totU||0}</td><td>${total.totNCP ? M(total.totNCP) : '—'}</td></tr>`;
+  el.innerHTML = thd + body + '</tbody>';
+}
+
+// ─── Channel Tables ───────────────────────────────────────────────────
+function renderChannelTables() {
+  const thd = `<thead><tr><th>Name</th><th>Local Dig U</th><th>Local Dig ₱M</th><th>Intl Dig U</th><th>Intl Dig ₱M</th><th>Local N-D U</th><th>Local N-D ₱M</th><th>Intl N-D U</th><th>Intl N-D ₱M</th><th>Local Total</th><th>Intl Total</th><th>Grand Total</th></tr></thead>`;
+  const rowFn = r => `<tr><td>${r.name}</td><td>${r.ldU}</td><td>${M(r.ldNCP)}</td><td>${r.idU}</td><td>${M(r.idNCP)}</td><td>${r.lndU}</td><td>${M(r.lndNCP)}</td><td>${r.indU}</td><td>${M(r.indNCP)}</td><td>${r.localU} · ${M(r.localNCP)}</td><td>${r.intlU} · ${M(r.intlNCP)}</td><td>${r.totU} · ${M(r.totNCP)}</td></tr>`;
+  const gtFn = t => t ? `<tr class="grand-total"><td>Grand Total</td><td>${t.ldU}</td><td>${M(t.ldNCP)}</td><td>${t.idU}</td><td>${M(t.idNCP)}</td><td>${t.lndU}</td><td>${M(t.lndNCP)}</td><td>${t.indU}</td><td>${M(t.indNCP)}</td><td>${t.localU} · ${M(t.localNCP)}</td><td>${t.intlU} · ${M(t.intlNCP)}</td><td>${t.totU} · ${M(t.totNCP)}</td></tr>` : '';
+  document.getElementById('channel-proj-table').innerHTML = thd + '<tbody>' + DSR.channelByProj.map(rowFn).join('') + gtFn(DSR.s4aTotal) + '</tbody>';
+  document.getElementById('channel-country-table').innerHTML = thd + '<tbody>' + DSR.channelByCountry.map(rowFn).join('') + gtFn(DSR.s4aTotal) + '</tbody>';
+}
+
+// ─── Payment Terms Tables ─────────────────────────────────────────────
+function renderPaymentTermsTables() {
+  function buildTable(terms, projects, total, tableId) {
+    const t = document.getElementById(tableId);
+    const projCols = projects.map(p => `<th>${p}</th>`).join('') + '<th>Total Units</th><th>Total NCP</th>';
+    let html = `<thead><tr><th>Payment Term</th>${projCols}</tr></thead><tbody>`;
+    for (const r of terms) {
+      html += `<tr><td>${r.name}</td>` + r.vals.map(v => `<td>${v.u ? v.u + ' · ' + M(v.ncp) : '—'}</td>`).slice(0, projects.length).join('') + `<td>${r.totU}</td><td>₱${M(r.totNCP)}</td></tr>`;
+    }
+    if (total) html += `<tr class="grand-total"><td>Grand Total</td>` + projects.map(() => '<td>—</td>').join('') + `<td>${total.u}</td><td>₱${M(total.ncp)}</td></tr>`;
+    t.innerHTML = html + '</tbody>';
+  }
+  buildTable(DSR.etsTerms, DSR.etsProjects, DSR.etsTermsTotal, 'ets-terms-table');
+  buildTable(DSR.htsTerms, DSR.htsProjects, DSR.htsTermsTotal, 'hts-terms-table');
+}
+
+// ─── Performance Table ────────────────────────────────────────────────
+function renderPerformanceTable() {
+  const t = document.getElementById('perf-table');
+  let html = `<thead><tr><th>Sales Group</th><th>Target Condo</th><th>Target H&L</th><th>Target Total</th><th>Actual Total</th><th>Variance</th><th>Condo %</th><th>H&L %</th><th>Total %</th></tr></thead><tbody>`;
+  for (const r of DSR.performance) {
+    if (r.isHeader) { html += `<tr class="group-header"><td colspan="9">${r.name}</td></tr>`; continue; }
+    const pc = Math.round((r.perf||0)*100);
+    const cls = pc >= 100 ? 'perf-hi' : pc > 0 ? '' : 'perf-lo';
+    html += `<tr><td>${r.name}</td><td>₱${M(r.tgtC)}</td><td>₱${M(r.tgtH)}</td><td>₱${M(r.tgt)}</td><td>₱${M(r.act)}</td><td class="${r.varT < 0 ? 'perf-lo' : 'perf-hi'}">₱${M(r.varT)}</td><td class="${r.perfC>=1?'perf-hi':''}">${Math.round((r.perfC||0)*100)}%</td><td class="${r.perfH>=1?'perf-hi':''}">${Math.round((r.perfH||0)*100)}%</td><td class="${cls}">${pc}%</td></tr>`;
+  }
+  if (DSR.s7Total) {
+    const t7 = DSR.s7Total;
+    html += `<tr class="grand-total"><td>Grand Total</td><td>₱${M(t7.tgtC)}</td><td>₱${M(t7.tgtH)}</td><td>₱${M(t7.tgt)}</td><td>₱${M(t7.act)}</td><td class="${(t7.act-t7.tgt)<0?'perf-lo':'perf-hi'}">₱${M(t7.act-t7.tgt)}</td><td>—</td><td>—</td><td>${Math.round((t7.perf||0)*100)}%</td></tr>`;
+  }
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+// ─── History / Trends tab ─────────────────────────────────────────────
+function renderHistoryTab() {
+  const history = getFilteredHistory();
+  const emptyEl   = document.getElementById('trends-empty');
+  const contentEl = document.getElementById('trends-content');
+  if (!history || history.length < 1) {
+    if (emptyEl)   emptyEl.style.display   = 'block';
+    if (contentEl) contentEl.style.display = 'none';
+    return;
+  }
+  if (emptyEl)   emptyEl.style.display   = 'none';
+  if (contentEl) contentEl.style.display = 'block';
+  const labels   = history.map(s => s.shortDate || s.date || '?');
+  const rsUnits  = applyDelta(history.map(s => (s.s2Total||{}).rsU  || 0));
+  const rsNCP    = applyDelta(history.map(s => toM((s.s2Total||{}).rsNCP || 0)));
+  const etsUnits = applyDelta(history.map(s => ((s.projects||[]).find(p=>p.name==='ETS')||{}).rsU || 0));
+  const htsUnits = applyDelta(history.map(s => ((s.projects||[]).find(p=>p.name==='HTS')||{}).rsU || 0));
+  const npUnits  = applyDelta(history.map(s => ((s.projects||[]).find(p=>p.name==='New Projects')||{}).rsU || 0));
+  const localNCP = applyDelta(history.map(s => toM((s.s4aTotal||{}).localNCP || 0)));
+  const intlNCP  = applyDelta(history.map(s => toM((s.s4aTotal||{}).intlNCP  || 0)));
+  const isDelta = VIEW_MODE === 'delta';
+  const chartType = isDelta ? 'bar' : 'line';
+  const latest   = history[history.length - 1];
+  const prev     = history.length > 1 ? history[history.length - 2] : null;
+  const latestRS = (latest.s2Total||{}).rsU || 0;
+  const prevRS   = prev ? ((prev.s2Total||{}).rsU || 0) : null;
+  const delta    = prevRS !== null ? latestRS - prevRS : null;
+  const totalDays = history.length;
+  const avgRS    = Math.round(rsUnits.reduce((a,b)=>a+b,0) / totalDays);
+  const peakSnap = history.reduce((best,s) => ((s.s2Total||{}).rsU||0) > ((best.s2Total||{}).rsU||0) ? s : best, history[0]);
+  document.getElementById('trends-metrics').innerHTML = `
+    <div class="metric blue"><div class="lbl">Latest RS</div><div class="val">${latestRS}u</div><div class="sub">₱${M((latest.s2Total||{}).rsNCP||0)} on ${latest.shortDate}</div></div>
+    <div class="metric ${delta===null?'':delta>=0?'green':'red'}"><div class="lbl">vs previous day</div><div class="val">${delta===null?'—':(delta>=0?'+':'')+delta+'u'}</div><div class="sub">${prevRS!==null?prevRS+'u on '+(prev.shortDate||'prev'):'No previous data'}</div></div>
+    <div class="metric"><div class="lbl">Daily average</div><div class="val">${avgRS}u</div><div class="sub">over ${totalDays} day${totalDays!==1?'s':''}</div></div>
+    <div class="metric amber"><div class="lbl">Peak day</div><div class="val">${(peakSnap.s2Total||{}).rsU||0}u</div><div class="sub">${peakSnap.shortDate}</div></div>
+  `;
+  const lineOpts = (yLabel) => ({ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font:{size:11} } }, y: { ticks: { font:{size:11}, callback: v => yLabel ? yLabel+v : v } } }, elements: { point: { radius: 4, hoverRadius: 6 } } });
+  destroyChart('trend-rs-units');
+  charts['trend-rs-units'] = new Chart(document.getElementById('trend-rs-units-chart'), { type: chartType, data: { labels, datasets: [{ label: isDelta?'New Units':'RS Units (cumul.)', data: rsUnits, borderColor: '#378ADD', backgroundColor: isDelta?'#378ADD':'rgba(55,138,221,0.08)', fill: !isDelta, tension: 0.3, borderRadius: isDelta?4:0 }] }, options: lineOpts('') });
+  destroyChart('trend-rs-ncp');
+  charts['trend-rs-ncp'] = new Chart(document.getElementById('trend-rs-ncp-chart'), { type: chartType, data: { labels, datasets: [{ label: isDelta?'New ₱M':'₱M (cumul.)', data: rsNCP, borderColor: '#1D9E75', backgroundColor: isDelta?'#1D9E75':'rgba(29,158,117,0.08)', fill: !isDelta, tension: 0.3, borderRadius: isDelta?4:0 }] }, options: lineOpts('₱') });
+  destroyChart('trend-proj');
+  charts['trend-proj'] = new Chart(document.getElementById('trend-proj-chart'), { type: 'bar', data: { labels, datasets: [ { label: 'ETS', data: etsUnits, backgroundColor: '#378ADD', borderRadius: 3 }, { label: 'HTS', data: htsUnits, backgroundColor: '#1D9E75', borderRadius: 3 }, { label: 'New Projects', data: npUnits, backgroundColor: '#BA7517', borderRadius: 3 } ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position:'top', labels:{font:{size:11},boxWidth:10,boxHeight:10} } }, scales: { x:{stacked:true,ticks:{font:{size:11}}}, y:{stacked:true,ticks:{font:{size:11}}} } } });
+  destroyChart('trend-channel');
+  charts['trend-channel'] = new Chart(document.getElementById('trend-channel-chart'), { type: 'bar', data: { labels, datasets: [ { label: 'Local ₱M', data: localNCP, backgroundColor: '#7F77DD', borderRadius: 3 }, { label: 'Intl ₱M', data: intlNCP, backgroundColor: '#D85A30', borderRadius: 3 } ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position:'top', labels:{font:{size:11},boxWidth:10,boxHeight:10} } }, scales: { x:{stacked:true,ticks:{font:{size:11}}}, y:{stacked:true,ticks:{font:{size:11},callback:v=>'₱'+v+'M'}} } } });
+  const tbl = document.getElementById('trends-history-table');
+  let html = `<thead><tr><th>Date</th><th>RS Units</th><th>RS ₱M</th><th>ETS u</th><th>HTS u</th><th>New Proj u</th><th>Local ₱M</th><th>Intl ₱M</th><th>Performance</th><th>Source File</th></tr></thead><tbody>`;
+  for (const s of [...history].reverse()) {
+    const t = s.s2Total||{}, ch = s.s4aTotal||{}, perf = s.s7Total||{};
+    const perfPct = perf.perf ? Math.round(perf.perf*100) : 0;
+    const ets = (s.projects||[]).find(p=>p.name==='ETS')||{};
+    const hts = (s.projects||[]).find(p=>p.name==='HTS')||{};
+    const np  = (s.projects||[]).find(p=>p.name==='New Projects')||{};
+    const isLatest = s === latest;
+    html += `<tr${isLatest?' class="grand-total"':''}><td>${s.shortDate||s.date}${isLatest?' <span class="badge badge-green">latest</span>':''}</td><td>${t.rsU||0}</td><td>₱${M(t.rsNCP||0)}</td><td>${ets.rsU||0}</td><td>${hts.rsU||0}</td><td>${np.rsU||0}</td><td>${M(ch.localNCP||0)}</td><td>${M(ch.intlNCP||0)}</td><td class="${perfPct>=100?'perf-hi':perfPct>0?'':'perf-lo'}">${perfPct}%</td><td style="font-size:11px;color:var(--text3);">${s.sourceFile||'—'}</td></tr>`;
+  }
+  tbl.innerHTML = html + '</tbody>';
+}
+
+// ─── Targets tab ─────────────────────────────────────────────────────
+function renderTargetsTab() {
+  const targets = window.DSR_TARGETS || {};
+  const history = (window.DSR_HISTORY || []).slice().sort((a,b) => a.processedAt > b.processedAt ? 1 : -1);
+  const emptyEl   = document.getElementById('targets-empty');
+  const contentEl = document.getElementById('targets-content');
+  if (!targets || Object.keys(targets).length === 0) {
+    if (emptyEl)   emptyEl.style.display   = 'block';
+    if (contentEl) contentEl.style.display = 'none';
+    return;
+  }
+  if (emptyEl)   emptyEl.style.display   = 'none';
+  if (contentEl) contentEl.style.display = 'block';
+
+  // Map latest snapshot per month-key
+  const latestByMonth = {};
+  for (const snap of history) {
+    const d = new Date(snap.processedAt);
+    const key = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    latestByMonth[key] = snap;
+  }
+
+  const months = Object.keys(targets);
+  const rows = months.map(month => {
+    const tgt  = targets[month] || {};
+    const snap = latestByMonth[month];
+    const actNCP   = snap ? ((snap.s2Total||{}).rsNCP || 0) : null;
+    const actUnits = snap ? ((snap.s2Total||{}).rsU   || 0) : null;
+    const tgtNCP   = (tgt.total||{}).ncp   || 0;
+    const tgtUnits = (tgt.total||{}).units || 0;
+    const perf     = tgtNCP > 0 && actNCP !== null ? actNCP / tgtNCP : null;
+
+    const getProj = (name) => snap ? ((snap.projects||[]).find(p=>p.name===name)||{}).rsNCP||0 : 0;
+    return {
+      month, tgtNCP, tgtUnits, actNCP, actUnits, perf,
+      actETS: getProj('ETS'),     tgtETS: (tgt.ETS||{}).ncp||0,
+      actHTS: getProj('HTS'),     tgtHTS: (tgt.HTS||{}).ncp||0,
+      actNP:  getProj('New Projects'), tgtNP: (tgt['New Projects']||{}).ncp||0,
+    };
+  });
+
+  // Metric cards — most recent month with targets
+  const cur = rows[rows.length - 1];
+  if (cur) {
+    const perfPct = cur.perf !== null ? Math.round(cur.perf*100) : null;
+    const variance = cur.actNCP !== null ? cur.actNCP - cur.tgtNCP : null;
+    document.getElementById('targets-metrics').innerHTML = `
+      <div class="metric ${perfPct===null?'':perfPct>=100?'green':perfPct>=50?'amber':'red'}">
+        <div class="lbl">${cur.month} — Performance</div>
+        <div class="val">${perfPct!==null ? perfPct+'%' : '—'}</div>
+        <div class="sub">of ₱${M(cur.tgtNCP)} target</div>
+      </div>
+      <div class="metric blue">
+        <div class="lbl">Actual RS</div>
+        <div class="val">${cur.actNCP!==null ? '₱'+M(cur.actNCP) : '—'}</div>
+        <div class="sub">${cur.actUnits!==null ? cur.actUnits+' units' : 'No data yet'}</div>
+      </div>
+      <div class="metric ${variance===null?'':variance>=0?'green':'red'}">
+        <div class="lbl">Variance</div>
+        <div class="val">${variance!==null ? (variance>=0?'+':'')+M(variance)+'M' : '—'}</div>
+        <div class="sub">${cur.actUnits!==null && cur.tgtUnits ? (cur.actUnits-cur.tgtUnits>=0?'+':'')+(cur.actUnits-cur.tgtUnits)+' units' : ''}</div>
+      </div>
+      <div class="metric">
+        <div class="lbl">Target units</div>
+        <div class="val">${cur.tgtUnits||'—'}</div>
+        <div class="sub">Actual: ${cur.actUnits!==null ? cur.actUnits : '—'}</div>
+      </div>`;
+    // Project breakdown chart for current month
+    document.getElementById('targets-proj-title').textContent = cur.month + ' — Target vs Actual by project (₱M)';
+    destroyChart('targets-proj');
+    charts['targets-proj'] = new Chart(document.getElementById('targets-proj-chart'), {
+      type: 'bar',
+      data: {
+        labels: ['ETS','HTS','New Projects'],
+        datasets: [
+          { label:'Target ₱M', data:[toM(cur.tgtETS),toM(cur.tgtHTS),toM(cur.tgtNP)], backgroundColor:'rgba(136,135,128,0.25)', borderRadius:4 },
+          { label:'Actual ₱M', data:[toM(cur.actETS),toM(cur.actHTS),toM(cur.actNP)], backgroundColor:['#378ADD','#1D9E75','#BA7517'], borderRadius:4 }
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'top', labels:{font:{size:11},boxWidth:10,boxHeight:10} } },
+        scales:{ y:{ ticks:{ font:{size:11}, callback:v=>'₱'+v+'M' } }, x:{ ticks:{font:{size:12}} } } }
+    });
+  }
+
+  // Monthly progress chart (all months)
+  destroyChart('targets-monthly');
+  const perfPcts = rows.map(r => r.perf !== null ? Math.round(r.perf*100) : 0);
+  charts['targets-monthly'] = new Chart(document.getElementById('targets-monthly-chart'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{
+        label: '% of target',
+        data: perfPcts,
+        backgroundColor: perfPcts.map(p => p>=100?'rgba(29,158,117,0.7)':p>=50?'rgba(186,117,23,0.7)':'rgba(226,75,74,0.7)'),
+        borderRadius: 4
+      }]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{label:ctx=>ctx.parsed.y+'%'} } },
+      scales:{ y:{ max:120, ticks:{font:{size:11},callback:v=>v+'%'},
+        grid:{ color:ctx=>ctx.tick.value===100?'rgba(29,158,117,0.6)':'rgba(0,0,0,0.07)', lineWidth:ctx=>ctx.tick.value===100?2:1 } },
+        x:{ticks:{font:{size:11}}} } }
+  });
+
+  // Monthly table
+  const tbl = document.getElementById('targets-table');
+  let html = `<thead><tr><th>Month</th><th>Target ₱M</th><th>Target u</th><th>Actual ₱M</th><th>Actual u</th><th>Variance ₱M</th><th>% of Target</th><th>Progress</th></tr></thead><tbody>`;
+  for (const r of rows) {
+    const perfPct = r.perf !== null ? Math.round(r.perf*100) : null;
+    const variance = r.actNCP !== null ? r.actNCP - r.tgtNCP : null;
+    const bw = perfPct !== null ? Math.min(100,perfPct) : 0;
+    const bc = perfPct!==null && perfPct>=100 ? 'var(--green)' : perfPct!==null && perfPct>=50 ? 'var(--amber)' : 'var(--red)';
+    html += `<tr>
+      <td>${r.month}</td>
+      <td>₱${M(r.tgtNCP)}</td>
+      <td>${r.tgtUnits||'—'}</td>
+      <td>${r.actNCP!==null ? '₱'+M(r.actNCP) : '—'}</td>
+      <td>${r.actUnits!==null ? r.actUnits : '—'}</td>
+      <td class="${variance!==null?(variance>=0?'over-target':'under-target'):''}">
+        ${variance!==null ? (variance>=0?'+':'')+M(variance)+'M' : '—'}</td>
+      <td class="${perfPct!==null?(perfPct>=100?'over-target':perfPct<50?'under-target':''):''}">
+        ${perfPct!==null ? perfPct+'%' : '—'}</td>
+      <td><div class="tva-bar"><div class="fill" style="width:${bw}%;background:${bc};"></div></div></td>
+    </tr>`;
+  }
+  tbl.innerHTML = html + '</tbody>';
+}
+
+// ─── Charts ───────────────────────────────────────────────────────────
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+const COLORS = ['#378ADD','#1D9E75','#BA7517','#D85A30','#D4537E','#7F77DD','#639922','#E24B4A','#5DCAA5'];
+
+function buildCharts() {
+  if (!DSR) return;
+  destroyChart('proj');
+  const projGroups = DSR.projects.filter(p => p.isGroup && p.rsNCP > 0);
+  charts['proj'] = new Chart(document.getElementById('proj-chart'), { type: 'bar', data: { labels: projGroups.map(p => p.name), datasets: [{ label: '₱M', data: projGroups.map(p => toM(p.rsNCP)), backgroundColor: COLORS.slice(0,3), borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { font:{size:11}, callback: v => '₱'+v+'M' } }, x: { ticks: { font:{size:12} } } } } });
+  destroyChart('channel');
+  const ch = DSR.s4aTotal || {};
+  charts['channel'] = new Chart(document.getElementById('channel-chart'), { type: 'doughnut', data: { labels: ['Local Digital','Intl Digital','Local Non-Digital','Intl Non-Digital'], datasets: [{ data: [toM(ch.ldNCP||0), toM(ch.idNCP||0), toM(ch.lndNCP||0), toM(ch.indNCP||0)], backgroundColor: ['#378ADD','#1D9E75','#7F77DD','#BA7517'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position:'right', labels: { font:{size:11}, boxWidth:10, boxHeight:10 } }, tooltip: { callbacks: { label: ctx => ` ₱${ctx.parsed}M` } } } } });
+  destroyChart('ets-terms');
+  const etsData = DSR.etsTerms.filter(t => t.totNCP > 0);
+  charts['ets-terms'] = new Chart(document.getElementById('ets-terms-chart'), { type: 'doughnut', data: { labels: etsData.map(t => t.name), datasets: [{ data: etsData.map(t => toM(t.totNCP)), backgroundColor: COLORS.slice(0,etsData.length), borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position:'right', labels: { font:{size:10}, boxWidth:10, boxHeight:10 } }, tooltip: { callbacks: { label: ctx => ` ₱${ctx.parsed}M` } } } } });
+  destroyChart('agents');
+  const agents = DSR.salesGroups.filter(g => !g.isHeader && g.rsNCP > 0).sort((a,b) => b.rsNCP - a.rsNCP).slice(0,6);
+  const agentH = Math.max(180, agents.length * 36 + 40);
+  document.getElementById('agents-chart').parentElement.style.height = agentH + 'px';
+  charts['agents'] = new Chart(document.getElementById('agents-chart'), { type: 'bar', data: { labels: agents.map(a => a.name.split(',')[0]), datasets: [{ label: '₱M RS', data: agents.map(a => toM(a.rsNCP)), backgroundColor: '#378ADD', borderRadius: 4 }] }, options: { indexAxis:'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display:false } }, scales: { x: { ticks: { font:{size:11}, callback: v => '₱'+v+'M' } }, y: { ticks: { font:{size:11} } } } } });
+  destroyChart('perf');
+  const perfAgents = DSR.performance.filter(p => !p.isHeader && p.tgt > 0);
+  const perfH2 = Math.max(200, perfAgents.length * 36 + 40);
+  document.getElementById('perf-chart').parentElement.style.height = perfH2 + 'px';
+  charts['perf'] = new Chart(document.getElementById('perf-chart'), { type: 'bar', data: { labels: perfAgents.map(p => p.name.split(',')[0]), datasets: [ { label: 'Target ₱M', data: perfAgents.map(p => toM(p.tgt)), backgroundColor: 'rgba(136,135,128,0.3)', borderRadius: 4 }, { label: 'Actual ₱M', data: perfAgents.map(p => toM(p.act)), backgroundColor: '#1D9E75', borderRadius: 4 } ] }, options: { indexAxis:'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { position:'top', labels: { font:{size:11}, boxWidth:10, boxHeight:10 } } }, scales: { x: { ticks: { font:{size:11}, callback: v => '₱'+v+'M' } }, y: { ticks: { font:{size:11} } } } } });
+}
+
+// ─── WhatsApp report builder ──────────────────────────────────────────
+function tog(id) { const el = document.getElementById(id); return !el || el.checked; }
+
+function buildReport() {
+  if (!DSR) return;
+  const date = document.getElementById('rpt-date').value || DSR.shortDate;
+  const newRS = parseInt(document.getElementById('new-rs').value) || 0;
+  const psCount = parseInt(document.getElementById('ps-count').value) || 0;
+  const ssCount = parseInt(document.getElementById('ss-count').value) || 0;
+  const t = DSR.s2Total || {};
+  const ps = DSR.s1Total || {};
+  const ch = DSR.s4aTotal || {};
+  const ets = (DSR.projects||[]).find(p => p.isGroup && p.name === 'ETS') || {};
+  const hts = (DSR.projects||[]).find(p => p.isGroup && p.name === 'HTS') || {};
+  const np  = (DSR.projects||[]).find(p => p.isGroup && p.name === 'New Projects') || {};
+  const etsTot = DSR.etsTermsTotal || {};
+  const htsTot = DSR.htsTermsTotal || {};
+  let lines = [];
+  if (tog('tog-header')) {
+    lines.push(`DSR as of EOD ${date} :\n`);
+    lines.push(`${newRS} new RS acct${newRS !== 1 ? 's' : ''}.`);
+    if (ets.rsNCP > 0) lines.push(`ETS - ${M(ets.rsNCP)}, ${ets.rsU}u`);
+    if (hts.rsNCP > 0) lines.push(`HTS - ${M(hts.rsNCP)}, ${hts.rsU}u`);
+    if (np.rsNCP  > 0) lines.push(`New Proj - ${M(np.rsNCP)}, ${np.rsU}u`);
+    lines.push('');
+  }
+  if (tog('tog-total')) lines.push(`1. Total RS: ${M(t.rsNCP||0)}, ${t.rsU||0}u`);
+  if (tog('tog-parking')) {
+    const psParts = [];
+    if (psCount > 0) psParts.push(`${psCount}PS`);
+    if (ssCount > 0) psParts.push(`${ssCount}SS`);
+    lines.push(`2. Parking & Storage: ${M(ps.psNCP||0)}${psParts.length ? ', ' + psParts.join(' / ') : ''}`);
+  }
+  if (tog('tog-lto')) {
+    if (etsTot.u > 0) {
+      lines.push(`3. Live to Own Availed Terms (ETS): ${M(etsTot.ncp||0)}, ${etsTot.u||0}u`);
+      for (const term of (DSR.etsTerms||[]).filter(t => t.totNCP > 0)) lines.push(`   ${term.name} - ${M(term.totNCP)}, ${term.totU}u`);
+    }
+    if (htsTot && htsTot.u > 0) {
+      if (etsTot.u > 0) lines.push('');
+      lines.push(`   Live to Own Availed Terms (HTS / New Proj): ${M(htsTot.ncp||0)}, ${htsTot.u||0}u`);
+      for (const term of (DSR.htsTerms||[]).filter(t => t.totNCP > 0)) lines.push(`   ${term.name} - ${M(term.totNCP)}, ${term.totU}u`);
+    }
+  }
+  if (tog('tog-channels')) {
+    lines.push('');
+    lines.push(`4. Local Sales: ${M(ch.localNCP||0)}, ${ch.localU||0}u`);
+    if (ch.ldNCP  > 0) lines.push(`   Digital: ${M(ch.ldNCP)}, ${ch.ldU}u`);
+    if (ch.lndNCP > 0) lines.push(`   Non-Digital: ${M(ch.lndNCP)}, ${ch.lndU}u`);
+    lines.push('');
+    lines.push(`   International Sales: ${M(ch.intlNCP||0)}, ${ch.intlU||0}u`);
+    if (ch.idNCP  > 0) lines.push(`   Digital: ${M(ch.idNCP)}, ${ch.idU}u`);
+    if (ch.indNCP > 0) lines.push(`   Non-Digital: ${M(ch.indNCP)}, ${ch.indU}u`);
+  }
+  document.getElementById('report-out').textContent = lines.join('\n');
+}
+
+function copyReport() {
+  const text = document.getElementById('report-out').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const t = document.getElementById('copy-toast');
+    t.style.opacity = '1';
+    setTimeout(() => t.style.opacity = '0', 2000);
+  });
+}
+
+// ─── Generate Shareable HTML ──────────────────────────────────────────
+function generateShareableHTML() {
+  if (!DSR) { alert('Upload an Excel file first.'); return; }
+  const dataJSON = JSON.stringify(DSR);
+  const historyJSON = JSON.stringify(window.DSR_HISTORY || []);
+  const targetsJSON = JSON.stringify(window.DSR_TARGETS || {});
+  const embedScript = `<scr` + `ipt>
+(function(){
+  window.DSR_HISTORY = ` + historyJSON + `;
+  window.DSR_TARGETS = ` + targetsJSON + `;
+  var baked = ` + dataJSON + `;
+  window.addEventListener('DOMContentLoaded', function() {
+    DSR = baked;
+    renderAll();
+    document.getElementById('upload-landing').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    document.getElementById('hdr-meta').textContent = 'DSR ' + DSR.reportDate + ' (snapshot)';
+    document.getElementById('status-dot').classList.add('loaded');
+    var fi = document.getElementById('file-input'); if (fi) fi.disabled = true;
+    var lbl = document.querySelector('.upload-mini label'); if (lbl) { lbl.style.opacity='0.4'; lbl.style.pointerEvents='none'; }
+    var banner = document.createElement('div');
+    banner.style.cssText='background:var(--amber-bg);color:var(--amber);padding:6px 16px;font-size:12px;text-align:center;border-bottom:0.5px solid var(--border);';
+    banner.textContent='Snapshot as of ' + DSR.reportDate + ' — data is baked in, not live.';
+    document.body.insertBefore(banner, document.querySelector('.tab-wrap'));
+  });
+})();
+<\/scr` + `ipt>`;
+  const currentHTML = document.documentElement.outerHTML;
+  const shareHTML = currentHTML.replace(/<!--DSR_SHARE_INJECT-->[\s\S]*?<!--\/DSR_SHARE_INJECT-->|$/, '<!--DSR_SHARE_INJECT-->' + embedScript + '<!--/DSR_SHARE_INJECT-->');
+  const blob = new Blob([shareHTML], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateSlug = (DSR.shortDate || 'snapshot').replace(/\s+/g,'_');
+  a.download = `DSR_Snapshot_${dateSlug}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+<!--DSR_TARGETS_BLOCK_START-->
+<script>window.DSR_TARGETS = {"May 2026": {"total": {"units": 72, "ncp": 819086086.83}, "ETS": {"units": 45, "ncp": 500000000}, "HTS": {"units": 15, "ncp": 200000000}, "New Projects": {"units": 12, "ncp": 119086086.83}}, "June 2026": {"total": {"units": 0, "ncp": 0}, "ETS": {"units": 0, "ncp": 0}, "HTS": {"units": 0, "ncp": 0}, "New Projects": {"units": 0, "ncp": 0}}};</script>
+<!--DSR_TARGETS_BLOCK_END-->
+<!--DSR_HISTORY_BLOCK_START-->
+<script>window.DSR_HISTORY = [{"date": "May 5, 2026", "shortDate": "May 5", "processedAt": "2026-05-28T00:00:00Z", "sourceFile": "DSR_May_05_2026.xlsx", "s2Total": {"rsU": 10.0, "rsNCP": 94194132.0, "psSlots": 2.0, "psNCP": 2000000.0}, "s1Total": {"rsU": 10.0, "rsNCP": 94194132.0, "totU": 10.0, "totNCP": 94194132.0, "psSlots": 2.0, "psNCP": 2000000.0}, "s4aTotal": {"localU": 2.0, "localNCP": 18838826.0, "intlU": 8.0, "intlNCP": 75355306.0, "totU": 10.0, "totNCP": 94194132.0}, "s7Total": {"tgt": 819086086.8313, "act": 94194132.0, "perf": 0.11499906238719977}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 7.0, "rsNCP": 54000000.0}, {"name": "HTS", "isGroup": true, "rsU": 2.0, "rsNCP": 32000000.0}, {"name": "New Projects", "isGroup": true, "rsU": 1.0, "rsNCP": 9000000.0}], "salesGroups": [], "etsTermsTotal": {"u": 7.0, "ncp": 54000000.0}, "htsTermsTotal": {"u": 3.0, "ncp": 41000000.0}, "pdRSTotal": {"totU": 10.0, "totNCP": 94194132.0, "psU": 2.0, "psNCP": 2000000.0}}, {"date": "May 6, 2026", "shortDate": "May 6", "processedAt": "2026-05-28T00:00:00Z", "sourceFile": "DSR_May_06_2026.xlsx", "s2Total": {"rsU": 15.0, "rsNCP": 130964218.0, "psSlots": 2.0, "psNCP": 2000000.0}, "s1Total": {"rsU": 15.0, "rsNCP": 130964218.0, "totU": 15.0, "totNCP": 130964218.0, "psSlots": 2.0, "psNCP": 2000000.0}, "s4aTotal": {"localU": 4.0, "localNCP": 32741054.0, "intlU": 11.0, "intlNCP": 98223164.0, "totU": 15.0, "totNCP": 130964218.0}, "s7Total": {"tgt": 819086086.8313, "act": 130964218.0, "perf": 0.15989066363786686}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 11.0, "rsNCP": 81000000.0}, {"name": "HTS", "isGroup": true, "rsU": 2.0, "rsNCP": 32000000.0}, {"name": "New Projects", "isGroup": true, "rsU": 2.0, "rsNCP": 18000000.0}], "salesGroups": [], "etsTermsTotal": {"u": 11.0, "ncp": 81000000.0}, "htsTermsTotal": {"u": 4.0, "ncp": 50000000.0}, "pdRSTotal": {"totU": 15.0, "totNCP": 130964218.0, "psU": 2.0, "psNCP": 2000000.0}}, {"date": "May 10, 2026", "shortDate": "May 10", "processedAt": "2026-05-28T00:00:00Z", "sourceFile": "DSR_May_10_2026.xlsx", "s2Total": {"rsU": 21.0, "rsNCP": 173129060.0, "psSlots": 2.0, "psNCP": 2000000.0}, "s1Total": {"rsU": 21.0, "rsNCP": 173129060.0, "totU": 21.0, "totNCP": 173129060.0, "psSlots": 2.0, "psNCP": 2000000.0}, "s4aTotal": {"localU": 5.0, "localNCP": 41221205.0, "intlU": 16.0, "intlNCP": 131907855.0, "totU": 21.0, "totNCP": 173129060.0}, "s7Total": {"tgt": 819086086.8313, "act": 173129060.0, "perf": 0.21136857625034702}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 15.0, "rsNCP": 104000000.0}, {"name": "HTS", "isGroup": true, "rsU": 2.0, "rsNCP": 32000000.0}, {"name": "New Projects", "isGroup": true, "rsU": 4.0, "rsNCP": 36000000.0}], "salesGroups": [], "etsTermsTotal": {"u": 15.0, "ncp": 104000000.0}, "htsTermsTotal": {"u": 6.0, "ncp": 68000000.0}, "pdRSTotal": {"totU": 21.0, "totNCP": 173129060.0, "psU": 2.0, "psNCP": 2000000.0}}, {"date": "May 11, 2026", "shortDate": "May 11", "processedAt": "2026-05-28T00:00:00Z", "sourceFile": "DSR_May_11_2026.xlsx", "s2Total": {"rsU": 25.0, "rsNCP": 204772980.0, "psSlots": 3.0, "psNCP": 3000000.0}, "s1Total": {"rsU": 25.0, "rsNCP": 204772980.0, "totU": 25.0, "totNCP": 204772980.0, "psSlots": 3.0, "psNCP": 3000000.0}, "s4aTotal": {"localU": 5.0, "localNCP": 40954596.0, "intlU": 20.0, "intlNCP": 163818384.0, "totU": 25.0, "totNCP": 204772980.0}, "s7Total": {"tgt": 819086086.8313, "act": 204772980.0, "perf": 0.25000178038938575}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 18.0, "rsNCP": 126000000.0}, {"name": "HTS", "isGroup": true, "rsU": 2.0, "rsNCP": 32000000.0}, {"name": "New Projects", "isGroup": true, "rsU": 5.0, "rsNCP": 47000000.0}], "salesGroups": [], "etsTermsTotal": {"u": 18.0, "ncp": 126000000.0}, "htsTermsTotal": {"u": 7.0, "ncp": 79000000.0}, "pdRSTotal": {"totU": 25.0, "totNCP": 204772980.0, "psU": 3.0, "psNCP": 3000000.0}}, {"date": "May 13, 2026", "shortDate": "May 13", "processedAt": "2026-05-28T00:00:00Z", "sourceFile": "DSR_May_13_2026.xlsx", "s2Total": {"rsU": 28.0, "rsNCP": 232157881.0, "psSlots": 4.0, "psNCP": 4000000.0}, "s1Total": {"rsU": 28.0, "rsNCP": 232157881.0, "totU": 28.0, "totNCP": 232157881.0, "psSlots": 4.0, "psNCP": 4000000.0}, "s4aTotal": {"localU": 6.0, "localNCP": 49748117.0, "intlU": 22.0, "intlNCP": 182409764.0, "totU": 28.0, "totNCP": 232157881.0}, "s7Total": {"tgt": 819086086.8313, "act": 232157881.0, "perf": 0.2834352636828704}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 21.0, "rsNCP": 152000000.0}, {"name": "HTS", "isGroup": true, "rsU": 2.0, "rsNCP": 32000000.0}, {"name": "New Projects", "isGroup": true, "rsU": 5.0, "rsNCP": 46000000.0}], "salesGroups": [], "etsTermsTotal": {"u": 21.0, "ncp": 152000000.0}, "htsTermsTotal": {"u": 7.0, "ncp": 78000000.0}, "pdRSTotal": {"totU": 28.0, "totNCP": 232157881.0, "psU": 4.0, "psNCP": 4000000.0}}, {"date": "May 17, 2026", "shortDate": "May 17", "processedAt": "2026-05-28T00:00:00Z", "sourceFile": "DSR_May_17_2026.xlsx", "s2Total": {"rsU": 35.0, "rsNCP": 289635005.0, "psSlots": 4.0, "psNCP": 4000000.0}, "s1Total": {"rsU": 35.0, "rsNCP": 289635005.0, "totU": 35.0, "totNCP": 289635005.0, "psSlots": 4.0, "psNCP": 4000000.0}, "s4aTotal": {"localU": 9.0, "localNCP": 74477573.0, "intlU": 26.0, "intlNCP": 215157432.0, "totU": 35.0, "totNCP": 289635005.0}, "s7Total": {"tgt": 819086086.8313, "act": 289635005.0, "perf": 0.35360752631078884}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 25.0, "rsNCP": 181000000.0}, {"name": "HTS", "isGroup": true, "rsU": 3.0, "rsNCP": 42000000.0}, {"name": "New Projects", "isGroup": true, "rsU": 7.0, "rsNCP": 66000000.0}], "salesGroups": [], "etsTermsTotal": {"u": 25.0, "ncp": 181000000.0}, "htsTermsTotal": {"u": 10.0, "ncp": 108000000.0}, "pdRSTotal": {"totU": 35.0, "totNCP": 289635005.0, "psU": 4.0, "psNCP": 4000000.0}}, {"date": "May 18, 2026", "shortDate": "May 18", "processedAt": "2026-05-28T00:00:00Z", "sourceFile": "DSR_May_18_2026.xlsx", "s2Total": {"rsU": 37.0, "rsNCP": 303516090.0, "psSlots": 4.0, "psNCP": 4000000.0}, "s1Total": {"rsU": 37.0, "rsNCP": 303516090.0, "totU": 37.0, "totNCP": 303516090.0, "psSlots": 4.0, "psNCP": 4000000.0}, "s4aTotal": {"localU": 10.0, "localNCP": 82031376.0, "intlU": 27.0, "intlNCP": 221484714.0, "totU": 37.0, "totNCP": 303516090.0}, "s7Total": {"tgt": 819086086.8313, "act": 303516090.0, "perf": 0.3705545667051631}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 27.0, "rsNCP": 195000000.0}, {"name": "HTS", "isGroup": true, "rsU": 3.0, "rsNCP": 42000000.0}, {"name": "New Projects", "isGroup": true, "rsU": 7.0, "rsNCP": 66000000.0}], "salesGroups": [], "etsTermsTotal": {"u": 27.0, "ncp": 195000000.0}, "htsTermsTotal": {"u": 10.0, "ncp": 108000000.0}, "pdRSTotal": {"totU": 37.0, "totNCP": 303516090.0, "psU": 4.0, "psNCP": 4000000.0}}, {"date": "May 19, 2026", "shortDate": "May 19", "processedAt": "2026-05-28T00:00:00Z", "sourceFile": "DSR_May_19_2026.xlsx", "s2Total": {"rsU": 42.0, "rsNCP": 337948107.0, "psSlots": 4.0, "psNCP": 4000000.0}, "s1Total": {"rsU": 42.0, "rsNCP": 337948107.0, "totU": 42.0, "totNCP": 337948107.0, "psSlots": 4.0, "psNCP": 4000000.0}, "s4aTotal": {"localU": 11.0, "localNCP": 88510218.0, "intlU": 31.0, "intlNCP": 249437889.0, "totU": 42.0, "totNCP": 337948107.0}, "s7Total": {"tgt": 819086086.8313, "act": 337948107.0, "perf": 0.41259168289303905}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 31.0, "rsNCP": 221000000.0}, {"name": "HTS", "isGroup": true, "rsU": 4.0, "rsNCP": 50000000.0}, {"name": "New Projects", "isGroup": true, "rsU": 7.0, "rsNCP": 66000000.0}], "salesGroups": [], "etsTermsTotal": {"u": 31.0, "ncp": 221000000.0}, "htsTermsTotal": {"u": 11.0, "ncp": 116000000.0}, "pdRSTotal": {"totU": 42.0, "totNCP": 337948107.0, "psU": 4.0, "psNCP": 4000000.0}}, {"date": "May 20, 2026", "shortDate": "May 20", "processedAt": "2026-05-26T22:25:03.741497Z", "sourceFile": "95006c5e-c764-4fa2-a354-8b6e90e1c416-1779679512904_DSR_May_20_2026.xlsx", "s2Total": {"rsU": 43.0, "rsNCP": 342889275.505474, "psSlots": 4.0, "psNCP": 4250000.0}, "s1Total": {"rsU": 43.0, "rsNCP": 342889275.505474, "totU": 43.0, "totNCP": 342889275.505474, "psSlots": 4.0, "psNCP": 4250000.0}, "s4aTotal": {"localU": 11.0, "localNCP": 91319124.094926, "intlU": 32.0, "intlNCP": 251570151.41054797, "totU": 43.0, "totNCP": 342889275.50547403}, "s7Total": {"tgt": 819086086.8313, "act": 342889275.50547403, "perf": 0.41862422157842843}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 32.0, "rsNCP": 227018033.0519976}, {"name": "HTS", "isGroup": true, "rsU": 4.0, "rsNCP": 50260163.21987637}, {"name": "New Projects", "isGroup": true, "rsU": 7.0, "rsNCP": 65611079.233600006}], "salesGroups": [], "etsTermsTotal": {"u": 32.0, "ncp": 227018033.0519976}, "htsTermsTotal": {"u": 11.0, "ncp": 115871242.45347638}, "pdRSTotal": {"totU": 43.0, "totNCP": 342889275.505474, "psU": 4.0, "psNCP": 4250000.0}}, {"date": "May 24, 2026", "shortDate": "May 24", "processedAt": "2026-05-27T07:03:13.059572Z", "sourceFile": "DSR_May_24_2026.xlsx", "s2Total": {"rsU": 52.0, "rsNCP": 430759332.7561764, "psSlots": 4.0, "psNCP": 4250000.0}, "s1Total": {"rsU": 52.0, "rsNCP": 430759332.7561765, "totU": 52.0, "totNCP": 430759332.7561765, "psSlots": 4.0, "psNCP": 4250000.0}, "s4aTotal": {"localU": 16.0, "localNCP": 140122302.286816, "intlU": 36.0, "intlNCP": 290637030.4693604, "totU": 52.0, "totNCP": 430759332.7561765}, "s7Total": {"tgt": 819086086.8313, "act": 430759332.7561765, "perf": 0.5259023925343469}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 36.0, "rsNCP": 263818142.9848876}, {"name": "HTS", "isGroup": true, "rsU": 5.0, "rsNCP": 59759059.5392888}, {"name": "New Projects", "isGroup": true, "rsU": 11.0, "rsNCP": 107182130.232}], "salesGroups": [], "etsTermsTotal": {"u": 36.0, "ncp": 263818142.9848876}, "htsTermsTotal": {"u": 16.0, "ncp": 166941189.77128878}, "pdRSTotal": {"totU": 52.0, "totNCP": 430759332.7561765, "psU": 4.0, "psNCP": 4250000.0}}, {"date": "May 27, 2026", "shortDate": "May 27", "processedAt": "2026-05-28T00:00:00Z", "sourceFile": "DSR_May_27_2026.xlsx", "s2Total": {"rsU": 65.0, "rsNCP": 580425207.0, "psSlots": 4.0, "psNCP": 4000000.0}, "s1Total": {"rsU": 65.0, "rsNCP": 580425207.0, "totU": 65.0, "totNCP": 580425207.0, "psSlots": 4.0, "psNCP": 4000000.0}, "s4aTotal": {"localU": 20.0, "localNCP": 178592371.0, "intlU": 45.0, "intlNCP": 401832836.0, "totU": 65.0, "totNCP": 580425207.0}, "s7Total": {"tgt": 819086086.8313, "act": 580425207.0, "perf": 0.708625401324324}, "projects": [{"name": "ETS", "isGroup": true, "rsU": 44.0, "rsNCP": 320000000.0}, {"name": "HTS", "isGroup": true, "rsU": 6.0, "rsNCP": 114000000.0}, {"name": "New Projects", "isGroup": true, "rsU": 15.0, "rsNCP": 146000000.0}], "salesGroups": [], "etsTermsTotal": {"u": 44.0, "ncp": 320000000.0}, "htsTermsTotal": {"u": 21.0, "ncp": 260000000.0}, "pdRSTotal": {"totU": 65.0, "totNCP": 580425207.0, "psU": 4.0, "psNCP": 4000000.0}}];</script>
+<!--DSR_HISTORY_BLOCK_END-->
+</body>
+</html>
